@@ -25,11 +25,16 @@
 
   /* ── sound: small tones made in the browser, no files ── */
   var ac = null;
-  function unlock() {
+  var woke = false;
+  function unlock() {                 // called inside the tap on "Play": phones allow sound only after a touch
     try {
       if (!ac) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) ac = new AC(); }
       if (ac && ac.state === 'suspended') ac.resume();
     } catch (e) { ac = null; }
+    if (!woke && window.speechSynthesis) {      // iPhones: the first words must start inside a touch, so say a silent one now
+      woke = true;
+      try { var u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); } catch (e) { /* speech is a bonus */ }
+    }
   }
   function tone(f, at, dur, vol, type) {
     var o = ac.createOscillator(), g = ac.createGain();

@@ -17,7 +17,7 @@ h1, h2 { font-family: var(--display); line-height: 1.2; margin: 0; }
 p { margin: 0 0 8px; }
 
 /* ── the three screens ── */
-.screen { position: fixed; inset: 0; display: none; }
+.screen { position: fixed; top: 0; right: 0; bottom: 0; left: 0; display: none; }
 .screen.on { display: flex; }
 #start, #end { overflow-y: auto; -webkit-overflow-scrolling: touch; justify-content: center; align-items: flex-start;
   padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom)); }
@@ -58,7 +58,8 @@ p { margin: 0 0 8px; }
 #dots i.on { background: var(--gold); transform: scale(1.15); }
 #play { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly;
   padding: 4px 10px max(14px, env(safe-area-inset-bottom)); }
-.row { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: calc(var(--s) * .13); max-width: 100%; }
+.row { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; max-width: 100%; }
+.row > * { margin: calc(var(--s) * .065); }
 
 #play.find { --s: min(42vw, calc(var(--vh) * 30), 250px); }
 #play.place { --s: min(27vw, calc(var(--vh) * 27), 210px); }
@@ -98,7 +99,7 @@ p { margin: 0 0 8px; }
 .target { width: calc(var(--s) * 2); height: calc(var(--s) * 2); flex: none; position: relative; }
 .target .tray { position: absolute; left: 14%; right: 14%; top: 50%; transform: translateY(-50%); display: flex; flex-wrap: wrap; justify-content: center; gap: 4%; }
 .target .mini { width: 30%; height: auto; background: rgba(255,255,255,.92); border-radius: 50%; padding: calc(var(--s) * .06); box-shadow: 0 2px 6px rgba(0,0,0,.22); margin-bottom: 3%; }
-.row.items { max-width: calc(var(--s) * 3.5); }
+.row.items { max-width: calc(var(--s) * 3.6); }
 
 .hand { position: fixed; left: 0; top: 0; width: 64px; height: 64px; z-index: 20; opacity: 0; pointer-events: none;
   transition: transform 1.1s ease-in-out, opacity .3s; filter: drop-shadow(0 3px 5px rgba(0,0,0,.3)); }
