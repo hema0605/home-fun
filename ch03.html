@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>My Body · Home-Fun game · Anand Vidhya Pre-Nursery</title>
+<meta name="description" content="A small game to play with your child for about 5 minutes. Tap the part of the body that the phone names. Then touch it on your own body.">
+<meta property="og:title" content="My Body · Home-Fun game">
+<meta property="og:description" content="A small game to play with your child for about 5 minutes. Tap the part of the body that the phone names. Then touch it on your own body.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Anand Vidhya Pre-Nursery">
+<meta property="og:url" content="https://hema0605.github.io/home-fun/ch03.html">
+<meta property="og:image" content="https://hema0605.github.io/home-fun/share.png">
+<link rel="stylesheet" href="game.css">
+</head>
+<body>
+<div id="start" class="screen on">
+<div class="panel">
+<div>
+<div class="brand"><img src="logo.png" alt="" width="46" height="46"><span>Anand Vidhya Pre-Nursery<br>Home-Fun game</span></div>
+<h1>My Body</h1>
+<p class="kind">Listen and tap</p>
+<div class="preview"><div class="pv"><img src="art/tw-1f440.svg" alt="eyes"></div><div class="pv"><img src="art/tw-1f443-1f3fd.svg" alt="nose"></div><div class="pv"><img src="art/tw-1f444.svg" alt="mouth"></div></div>
+</div>
+<div>
+<button type="button" class="big" id="go"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 6 3.5z" fill="#fff"/></svg>Play</button>
+<div class="parents"><b>For parents</b>
+<p>Tap the part of the body that the phone names. Then touch it on your own body.</p>
+<p>Sit with your child and play together. It takes about 5 minutes. If the phone does not speak, read the question aloud. Then put the phone away.</p></div>
+</div>
+<p class="credit">Pictures: Twemoji, © Twitter, Inc and other contributors, CC BY 4.0; some pictures drawn for this programme.</p>
+</div>
+</div>
+<div id="game" class="screen">
+<div id="bar"><p id="prompt" aria-live="polite"></p><button type="button" id="again" aria-label="Hear it again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5v5h3.6l5 4.2V5.3l-5 4.2H3z" fill="#fff"/><path d="M15.5 8.6a5 5 0 0 1 0 6.8M18 6a8.6 8.6 0 0 1 0 12" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/></svg></button></div>
+<div id="dots" aria-hidden="true"></div>
+<div id="play"></div>
+</div>
+<div id="end" class="screen">
+<div class="panel">
+<div>
+<div class="stars"><img src="art/tw-2b50.svg" alt=""><img src="art/tw-2b50.svg" alt=""><img src="art/tw-2b50.svg" alt=""></div>
+<h1>Well done!</h1>
+</div>
+<div>
+<div class="parents"><b>For parents: now put the phone away</b>
+<p>At bath time, name each part as you wash it. Let your child wash the tummy and the feet.</p></div>
+<button type="button" class="big" id="replay"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 6 3.5z" fill="#fff"/></svg>Play again</button>
+</div>
+<p class="credit">Anand Vidhya · Awakening boundless potential in every child.</p>
+</div>
+</div>
+<script>window.GAME = {"no":3,"title":"My Body","mech":"find","say":"Listen. Then tap the picture.","star":"art/tw-2b50.svg","hand":"art/tw-1f446-1f3fd.svg","pool":[{"w":"eyes","a":"art/tw-1f440.svg"},{"w":"nose","a":"art/tw-1f443-1f3fd.svg"},{"w":"mouth","a":"art/tw-1f444.svg"},{"w":"ear","a":"art/tw-1f442-1f3fd.svg"},{"w":"hands","a":"art/tw-1f450-1f3fd.svg"},{"w":"feet","a":"art/tw-1f463.svg"}],"asks":[{"answer":"eyes","say":"Where are the eyes?"},{"answer":"nose","say":"Where is the nose?"},{"answer":"mouth","say":"Where is the mouth?"},{"answer":"ear","say":"Where is the ear?"},{"answer":"hands","say":"Where are the hands?"},{"answer":"feet","say":"Where are the feet?"}],"ordered":false};</script>
+<script src="game.js"></script>
+</body>
+</html>

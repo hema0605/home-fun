@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>This Is Me · Home-Fun game · Anand Vidhya Pre-Nursery</title>
+<meta name="description" content="A small game to play with your child for about 5 minutes. Tap the boy, the girl, the baby and the mirror when the phone asks.">
+<meta property="og:title" content="This Is Me · Home-Fun game">
+<meta property="og:description" content="A small game to play with your child for about 5 minutes. Tap the boy, the girl, the baby and the mirror when the phone asks.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Anand Vidhya Pre-Nursery">
+<meta property="og:url" content="https://hema0605.github.io/home-fun/ch02.html">
+<meta property="og:image" content="https://hema0605.github.io/home-fun/share.png">
+<link rel="stylesheet" href="game.css">
+</head>
+<body>
+<div id="start" class="screen on">
+<div class="panel">
+<div>
+<div class="brand"><img src="logo.png" alt="" width="46" height="46"><span>Anand Vidhya Pre-Nursery<br>Home-Fun game</span></div>
+<h1>This Is Me</h1>
+<p class="kind">Listen and tap</p>
+<div class="preview"><div class="pv"><img src="art/tw-1f466-1f3fd.svg" alt="boy"></div><div class="pv"><img src="art/tw-1f467-1f3fd.svg" alt="girl"></div><div class="pv"><img src="art/tw-1f476-1f3fd.svg" alt="baby"></div></div>
+</div>
+<div>
+<button type="button" class="big" id="go"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 6 3.5z" fill="#fff"/></svg>Play</button>
+<div class="parents"><b>For parents</b>
+<p>Tap the boy, the girl, the baby and the mirror when the phone asks.</p>
+<p>Sit with your child and play together. It takes about 5 minutes. If the phone does not speak, read the question aloud. Then put the phone away.</p></div>
+</div>
+<p class="credit">Pictures: Twemoji, © Twitter, Inc and other contributors, CC BY 4.0; some pictures drawn for this programme.</p>
+</div>
+</div>
+<div id="game" class="screen">
+<div id="bar"><p id="prompt" aria-live="polite"></p><button type="button" id="again" aria-label="Hear it again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5v5h3.6l5 4.2V5.3l-5 4.2H3z" fill="#fff"/><path d="M15.5 8.6a5 5 0 0 1 0 6.8M18 6a8.6 8.6 0 0 1 0 12" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/></svg></button></div>
+<div id="dots" aria-hidden="true"></div>
+<div id="play"></div>
+</div>
+<div id="end" class="screen">
+<div class="panel">
+<div>
+<div class="stars"><img src="art/tw-2b50.svg" alt=""><img src="art/tw-2b50.svg" alt=""><img src="art/tw-2b50.svg" alt=""></div>
+<h1>Well done!</h1>
+</div>
+<div>
+<div class="parents"><b>For parents: now put the phone away</b>
+<p>Stand at the mirror together. Ask, “Who is that?” Let your child say the name.</p></div>
+<button type="button" class="big" id="replay"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 6 3.5z" fill="#fff"/></svg>Play again</button>
+</div>
+<p class="credit">Anand Vidhya · Awakening boundless potential in every child.</p>
+</div>
+</div>
+<script>window.GAME = {"no":2,"title":"This Is Me","mech":"find","say":"Listen. Then tap the picture.","star":"art/tw-2b50.svg","hand":"art/tw-1f446-1f3fd.svg","pool":[{"w":"boy","a":"art/tw-1f466-1f3fd.svg"},{"w":"girl","a":"art/tw-1f467-1f3fd.svg"},{"w":"baby","a":"art/tw-1f476-1f3fd.svg"},{"w":"mirror","a":"art/tw-1fa9e.svg"}],"asks":[{"answer":"boy","say":"Where is the boy?"},{"answer":"girl","say":"Where is the girl?"},{"answer":"baby","say":"Where is the baby?"},{"answer":"mirror","say":"Where is the mirror?"}],"ordered":false};</script>
+<script src="game.js"></script>
+</body>
+</html>
