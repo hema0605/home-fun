@@ -33,7 +33,7 @@
     } catch (e) { ac = null; }
     if (!woke && window.speechSynthesis) {      // iPhones: the first words must start inside a touch, so say a silent one now
       woke = true;
-      try { var u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); } catch (e) { /* speech is a bonus */ }
+      try { var u = new SpeechSynthesisUtterance(' '); u.volume = 0; if (voice) { u.voice = voice; u.lang = voice.lang; } window.speechSynthesis.speak(u); } catch (e) { /* speech is a bonus */ }
     }
   }
   function tone(f, at, dur, vol, type) {
@@ -55,30 +55,81 @@
     } catch (e) { /* sound is a bonus */ }
   }
 
-  /* ── speech: the phone reads the question if it has a voice ── */
-  var synth = window.speechSynthesis || null, voice = null, sayT = null;
+  /* ── speech: the phone reads the question if it has a voice ──
+     The school asked on 15 Nov 2026: a completely female voice in every game, and "use Samantha's voice".
+     Samantha is Apple's voice. She is on every iPhone, iPad and Mac, and may be used there; Apple does not allow
+     her voice to be recorded into files for other phones. So:
+       1. A device that has Samantha speaks with Samantha, in every game.
+       2. A device without her speaks with another lady's voice of its own (known by name: a browser does not say
+          whether a voice is a woman's or a man's), or with its own English voice when the names tell nothing
+          (Android phones: "English United States").
+       3. A man's voice never speaks. A device that has only men's voices stays silent: the words are on the screen.
+     The voice speaks a little higher and a little slower than usual. */
+  var synth = window.speechSynthesis || null, voice = null, voiceKind = '', sayT = null, sayN = 0;
+  var LADY = /samantha|veena|isha|heera|neerja|swara|kajal|aditi|raveena|karen|moira|tessa|fiona|serena|kate\b|susan|allison|\bava\b|victoria|zoe|nicky|zira|\baria\b|jenny|sonia|libby|hazel|catherine|michelle|natasha|female|woman|google us english/i;
+  var MAN = /rishi|\bravi\b|prabhat|daniel|\balex\b|\bfred\b|\btom\b|oliver|aaron|arthur|gordon|martin|ralph|eddy|\breed\b|rocko|junior|david|\bmark\b|george|james|\bguy\b|ryan|\bmale\b|\bman\b/i;
+  var ODD = /bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|deranged|hysterical|grandma|grandpa|albert|kathy|\bflo\b|sandy|shelley|eloquence|espeak|compact/i;
+  var PLACE = [['en-us', 40], ['en-gb', 32], ['en-in', 30], ['en-au', 24], ['en-ie', 22], ['en-za', 22], ['en', 20]];   // nearest to Samantha first
+  function nameOf(v) { return String(v.name || '') + ' ' + String(v.voiceURI || ''); }
+  function kindOf(v) { var n = nameOf(v); return ODD.test(n) ? 'odd' : LADY.test(n) ? 'lady' : MAN.test(n) ? 'man' : 'unknown'; }
+  function marks(v) {
+    var lang = String(v.lang || '').toLowerCase().replace('_', '-'), name = nameOf(v), kind = kindOf(v), m = -1000;
+    for (var i = 0; i < PLACE.length; i++) { if (lang.indexOf(PLACE[i][0]) === 0) { m = PLACE[i][1]; break; } }
+    if (m < 0 || kind === 'man' || kind === 'odd') return -1000;      // not English, a man's voice or a funny voice: never
+    if (/samantha/i.test(name)) m += 300;
+    if (kind === 'lady') m += 100;
+    if (/natural|enhanced|premium|neural/i.test(name)) m += 6;
+    if (v.localService === false) m -= 5;
+    return m;
+  }
+  function choose(list) {
+    var best = -999, win = null, english = 0;
+    for (var j = 0; j < list.length; j++) {
+      if (/^en/i.test(String(list[j].lang || ''))) english++;
+      var m = marks(list[j]); if (m > best) { best = m; win = list[j]; }
+    }
+    // 'none' = the device named no English voice at all; 'men' = it has English voices, but only men's or funny ones
+    return { voice: win, kind: win ? kindOf(win) : english ? 'men' : 'none' };
+  }
+  var listed = false;                     // has the browser given its list of voices yet? (it comes a moment after the page)
   function pickVoice() {
     if (!synth) return;
-    var vs = [], order = ['en-IN', 'en_IN', 'en-GB', 'en_GB', 'en-US', 'en_US', 'en'];
+    var vs = [];
     try { vs = synth.getVoices() || []; } catch (e) { vs = []; }
-    voice = null;
-    for (var i = 0; i < order.length && !voice; i++) {
-      for (var j = 0; j < vs.length; j++) { if (vs[j].lang && vs[j].lang.indexOf(order[i]) === 0) { voice = vs[j]; break; } }
-    }
+    listed = vs.length > 0;
+    var c = choose(vs);
+    voice = c.voice; voiceKind = c.kind;
   }
   if (synth) { pickVoice(); try { synth.addEventListener('voiceschanged', pickVoice); } catch (e) { /* older browsers */ } }
+  var PHONE = /iphone|ipad|ipod|android/i.test(navigator.userAgent || '');
+  var said = [];                          // for the tests: what was said, and by whom
+  function speak(text) {
+    var how;
+    try {
+      var u = new SpeechSynthesisUtterance(text);
+      if (voice) { u.voice = voice; u.lang = voice.lang; how = voice.name; }
+      else if (!listed && PHONE) { u.lang = 'en-US'; how = 'the phone\'s own English voice'; }   // a phone that names no voices: its own English voice (Samantha on an iPhone)
+      else { said.push({ text: text, by: 'nobody (' + (voiceKind === 'men' ? 'only men\'s voices here' : 'no voice here') + ')' }); return; }
+      u.rate = 0.88; u.pitch = 1.25;      // gentle and a little bright
+      synth.speak(u);
+      said.push({ text: text, by: how });
+    } catch (e) { /* speech is a bonus */ }
+  }
   function say(text) {
     if (!synth || !text || document.hidden) return;
+    var n = ++sayN, tries = 0;
     clearTimeout(sayT);
     try { synth.cancel(); } catch (e) { return; }
-    sayT = setTimeout(function () {
-      try {
-        var u = new SpeechSynthesisUtterance(text);
-        if (voice) { u.voice = voice; u.lang = voice.lang; } else { u.lang = 'en-IN'; }
-        u.rate = 0.85; u.pitch = 1.05;
-        synth.speak(u);
-      } catch (e) { /* speech is a bonus */ }
-    }, 70);
+    // The list of voices can come a moment after the page. Wait for it (up to about a second) rather than
+    // let the device's first voice speak, which is a man's on an iPhone or a Mac.
+    (function go() {
+      sayT = setTimeout(function () {
+        if (n !== sayN) return;
+        if (!listed) pickVoice();
+        if (!listed && ++tries < 12) { go(); return; }
+        speak(text);
+      }, tries ? 100 : 70);
+    })();
   }
   var lastSay = '';
   function ask(text, spoken) { promptEl.textContent = text; lastSay = spoken || text; say(lastSay); }
@@ -388,10 +439,14 @@
   $('go').addEventListener('click', begin);
   $('replay').addEventListener('click', begin);
   document.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
-  function hush() { clearTimeout(sayT); try { if (synth) synth.cancel(); } catch (e) { /* nothing to stop */ } }
+  function hush() { sayN++; clearTimeout(sayT); try { if (synth) synth.cancel(); } catch (e) { /* nothing to stop */ } }
   window.addEventListener('pagehide', hush);
   document.addEventListener('visibilitychange', function () {      // the game is silent when its page is not in front
     if (document.hidden) { hush(); clearTimeout(idleT); stopHand(); } else { resetIdle(); }
   });
-  window.AVGAME = { begin: begin, state: function () { return { got: got, total: total, round: ri, rounds: rounds.length, ended: endEl.classList.contains('on') }; } };
+  window.AVGAME = { begin: begin, state: function () { return { got: got, total: total, round: ri, rounds: rounds.length, ended: endEl.classList.contains('on') }; },
+    // for the tests: which voice speaks here, and which one would be chosen from a given list of voices
+    voice: function () { return { name: voice ? voice.name : '', lang: voice ? voice.lang : '', kind: voiceKind }; },
+    bestOf: function (list) { var c = choose(list); return c.voice ? c.voice.name : c.kind === 'men' ? '(silent: only men\'s voices)' : '(none named)'; },
+    said: function () { return said.slice(); } };
 })();
