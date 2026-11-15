@@ -49,6 +49,13 @@
     var n;
     if (p.s) { n = el('span', 'shapebox'); n.innerHTML = shapeSvg(p); }
     else if (p.c) { n = el('span', 'patch'); n.style.background = p.c; }
+    else if (p.a2) {                                 // two pictures side by side, as on the flashcard: a pair of shoes
+      n = el('span', 'duo2');
+      [outline && p.o ? p.o : p.a, outline && p.o2 ? p.o2 : p.a2].forEach(function (src, k) {
+        var i = el('img', '', n); i.src = src; i.alt = ''; i.draggable = false;
+        if (p.m && !k) i.style.transform = 'scaleX(-1)';          // a pair that faces each other: two ears, two wings
+      });
+    }
     else { n = el('img'); n.src = outline && p.o ? p.o : p.a; n.alt = ''; n.draggable = false; }
     if (p.z) { var box = el('span', 'zbox'); box.appendChild(n); n.style.transform = 'scale(' + p.z + ')'; return box; }
     return n;
