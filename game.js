@@ -99,9 +99,38 @@
     listed = vs.length > 0;
     var c = choose(vs);
     voice = c.voice; voiceKind = c.kind;
+    showVoice();
   }
-  if (synth) { pickVoice(); try { synth.addEventListener('voiceschanged', pickVoice); } catch (e) { /* older browsers */ } }
   var PHONE = /iphone|ipad|ipod|android/i.test(navigator.userAgent || '');
+  function who() { return voice ? voice.name : (synth && !listed && PHONE) ? 'the phone’s own English voice' : 'none'; }
+  /* The start screen says in small letters which voice this device uses. A phone that names its voices only by
+     language (Android) cannot tell the game whether the voice is a woman's: then the line says how to change it. */
+  function showVoice() {
+    var line = document.getElementById('voiceline');
+    if (!line) {                                   // a page made before this line existed: add it under the start screen
+      var panel = startEl && startEl.querySelector ? startEl.querySelector('.panel') : null;
+      if (!panel) return;
+      line = document.createElement('p'); line.className = 'credit'; line.id = 'voiceline';
+      panel.appendChild(line);
+    }
+    line.textContent = 'Voice on this device: ' + who() + '.' +
+      (voiceKind === 'unknown' ? ' If it sounds like a man, choose a woman’s voice in the phone’s Settings (search there for “Text-to-speech”).' : '');
+  }
+  /* The copy on the school's own Wi-Fi notes on the school computer which voice a device uses, so that a wrong
+     voice can be found (the page sets AV_DIAG; the copies on the internet do not have it and tell nothing). */
+  var told = false;
+  function tell() {
+    if (told || !window.AV_DIAG) return;
+    told = true;
+    try {
+      var vs = [], names = [];
+      try { vs = synth ? synth.getVoices() || [] : []; } catch (e) { vs = []; }
+      for (var i = 0; i < vs.length && names.length < 14; i++) { if (/^en/i.test(String(vs[i].lang || ''))) names.push(vs[i].name + '/' + vs[i].lang); }
+      new Image().src = window.AV_DIAG + '?g=' + G.no + '&v=' + encodeURIComponent(who()) + '&k=' + encodeURIComponent(voiceKind) + '&n=' + vs.length +
+        '&en=' + encodeURIComponent(names.join(', ').slice(0, 400)) + '&ua=' + encodeURIComponent(String(navigator.userAgent || '').slice(0, 180));
+    } catch (e) { /* only a note */ }
+  }
+  if (synth) { pickVoice(); try { synth.addEventListener('voiceschanged', pickVoice); } catch (e) { /* older browsers */ } } else { showVoice(); }
   var said = [];                          // for the tests: what was said, and by whom
   function speak(text) {
     var how;
@@ -434,7 +463,7 @@
     if (ri >= rounds.length) { finish(); return; }
     rounds[ri++](next);
   }
-  function begin() { unlock(); build(); ri = 0; show(gameEl); drawDots(); next(); }
+  function begin() { unlock(); build(); ri = 0; show(gameEl); drawDots(); next(); setTimeout(tell, 1800); }
   function finish() { stopIdle(); stopHand(); show(endEl); sfx('win'); say('Well done!'); }
   $('go').addEventListener('click', begin);
   $('replay').addEventListener('click', begin);
