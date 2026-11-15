@@ -91,19 +91,22 @@
   }
 
   /* Every sentence a game can say is made by L, so that lines() can list them all: each one has a recording. */
+  /* A picture is named in a full sentence, which comes with the picture (p.t): "This is a bag." */
+  function nm(p) { return p.t || cap(p.w) + '.'; }
+  function low(s) { return s.charAt(0).toLowerCase() + s.slice(1); }
   var L = {
-    yes: function (a, p) { return a.yes || 'Yes! ' + cap(p.w) + '.'; },
+    yes: function (a, p) { return a.yes || 'Yes, ' + low(nm(p)); },
     ok: function () { return 'Yes!'; },
-    name: function (p) { return cap(p.w) + '.'; },
-    bin: function (b) { return cap(b.w) + '!'; },
-    sortAsk: function (q, sc) { return cap(q.w) + '. ' + sc.say; },
+    name: function (p) { return nm(p); },
+    bin: function (b) { return b.bt || cap(b.w) + '!'; },      // "It is red." "It goes on the road."
+    sortAsk: function (q, sc) { return nm(q) + ' ' + sc.say; },
     count: function (n) { return cap(NUM[n] || String(n)) + '.'; },
     miss: function (p) { return 'Not the ' + p.w + '.'; },
     done: function () { return 'Well done!'; }
   };
   function lines() {
     var out = [], add = function (t) { if (t && out.indexOf(t) < 0) out.push(t); };
-    if (G.mech === 'find') G.asks.forEach(function (a) { add(a.say); add(L.yes(a, { w: a.answer })); });
+    if (G.mech === 'find') G.asks.forEach(function (a) { add(a.say); add(L.yes(a, G.pool.filter(function (p) { return p.w === a.answer; })[0] || { w: a.answer })); });
     else if (G.mech === 'match') { add(G.say); G.sets.forEach(function (set) { set.forEach(function (p) { add(L.name(p)); }); }); }
     else if (G.mech === 'pair') { add(G.say); G.pairs.forEach(function (x) { add(x.line); }); }
     else if (G.mech === 'sort') G.screens.forEach(function (sc) {
