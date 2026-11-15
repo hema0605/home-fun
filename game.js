@@ -1,7 +1,8 @@
-/* Anand Vidhya Pre-Nursery · Home-Fun games.
-   One small engine for five kinds of game: find, match, pair, sort, collect.
+/* Anand Vidhya · Home-Fun games and thinking games.
+   One small engine for nine kinds of game: find, match, pair, sort, collect, same, odd one out, what comes next, order.
    The game is described by window.GAME, written into each page by build/pg_games.py.
-   A parent plays with the child: the phone speaks if it can, and the question is always on the screen too.
+   An adult plays with the child: the game speaks with its own recorded lady's voice, and the question is always
+   on the screen too.
    Nothing is wrong for long: a wrong choice wiggles and goes back, and after a pause the game shows what to do. */
 (function () {
   'use strict';
@@ -17,23 +18,57 @@
     return a;
   }
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  /* A picture: a drawing from a file, a patch of colour, or a shape drawn here (the thinking games use shapes).
+     p.z makes a smaller copy of the same picture (size games); p.n draws the shape several times (counting);
+     p.h draws only its outline; p.r turns it. */
+  var SHAPES = {
+    circle: '<circle cx="50" cy="50" r="43"/>',
+    square: '<rect x="9" y="9" width="82" height="82" rx="7"/>',
+    triangle: '<polygon points="50,9 93,88 7,88"/>',
+    rectangle: '<rect x="5" y="25" width="90" height="50" rx="6"/>',
+    star: '<polygon points="50,5 61,36 95,36 68,56 78,89 50,69 22,89 32,56 5,36 39,36"/>',
+    heart: '<path d="M50 88 C20 66 6 48 6 31 C6 17 17 8 29 8 C38 8 46 13 50 21 C54 13 62 8 71 8 C83 8 94 17 94 31 C94 48 80 66 50 88 Z"/>',
+    diamond: '<polygon points="50,5 90,50 50,95 10,50"/>',
+    oval: '<ellipse cx="50" cy="50" rx="45" ry="29"/>',
+    pentagon: '<polygon points="50,6 94,38 77,90 23,90 6,38"/>',
+    hexagon: '<polygon points="27,10 73,10 96,50 73,90 27,90 4,50"/>',
+    arrow: '<polygon points="50,6 90,50 66,50 66,94 34,94 34,50 10,50"/>',
+    moon: '<path d="M68 8 A44 44 0 1 0 68 92 A34 34 0 1 1 68 8 Z"/>'
+  };
+  function shapeSvg(p) {
+    var n = p.n || 1, cols = n > 4 ? 3 : n > 1 ? 2 : 1, rows = Math.ceil(n / cols), parts = '';
+    var cell = 100 / Math.max(cols, rows), k = cell / 100 * (n > 1 ? 0.84 : 1);
+    for (var i = 0; i < n; i++) {
+      var cx = (i % cols + 0.5) * cell + (100 - cols * cell) / 2, cy = (Math.floor(i / cols) + 0.5) * cell + (100 - rows * cell) / 2;
+      parts += '<g transform="translate(' + cx + ' ' + cy + ') scale(' + k + ') rotate(' + (p.r || 0) + ') translate(-50 -50)">' + (SHAPES[p.s] || SHAPES.circle) + '</g>';
+    }
+    var paint = p.h ? 'fill="#fff" stroke="' + p.f + '" stroke-width="9" stroke-linejoin="round"' : 'fill="' + p.f + '"';
+    return '<svg class="shape" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" ' + paint + '>' + parts + '</svg>';
+  }
   function pic(p, outline) {
-    if (p.c) { var s = el('span', 'patch'); s.style.background = p.c; return s; }
-    var i = el('img'); i.src = outline && p.o ? p.o : p.a; i.alt = ''; i.draggable = false; return i;
+    var n;
+    if (p.s) { n = el('span', 'shapebox'); n.innerHTML = shapeSvg(p); }
+    else if (p.c) { n = el('span', 'patch'); n.style.background = p.c; }
+    else { n = el('img'); n.src = outline && p.o ? p.o : p.a; n.alt = ''; n.draggable = false; }
+    if (p.z) { var box = el('span', 'zbox'); box.appendChild(n); n.style.transform = 'scale(' + p.z + ')'; return box; }
+    return n;
   }
   function centre(n) { var r = n.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }
 
-  /* ── sound: small tones made in the browser, no files ── */
+  /* ── sound: small tones made in the browser ── */
   var ac = null;
-  var woke = false;
   function unlock() {                 // called inside the tap on "Play": phones allow sound only after a touch
     try {
       if (!ac) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) ac = new AC(); }
       if (ac && ac.state === 'suspended') ac.resume();
     } catch (e) { ac = null; }
-    if (!woke && window.speechSynthesis) {      // iPhones: the first words must start inside a touch, so say a silent one now
-      woke = true;
-      try { var u = new SpeechSynthesisUtterance(' '); u.volume = 0; if (voice) { u.voice = voice; u.lang = voice.lang; } window.speechSynthesis.speak(u); } catch (e) { /* speech is a bonus */ }
+    if (FILE || !ac || !HAS_P) {      // the simple player is used: wake it inside the touch too, without a sound
+      try {
+        if (!tag) tag = new Audio();
+        for (var t in CLIPS) { if (Object.prototype.hasOwnProperty.call(CLIPS, t)) { tag.muted = true; tag.src = 'voice/' + CLIPS[t] + '.mp3'; break; } }
+        var pr = tag.play();
+        if (pr && pr.then) pr.then(function () { tag.pause(); tag.muted = false; }, function () { tag.muted = false; });
+      } catch (e) { /* sound is a bonus */ }
     }
   }
   function tone(f, at, dur, vol, type) {
@@ -55,85 +90,10 @@
     } catch (e) { /* sound is a bonus */ }
   }
 
-  /* ── speech: the phone reads the question if it has a voice ──
-     The school asked on 15 Nov 2026: a completely female voice in every game, and "use Samantha's voice".
-     Samantha is Apple's voice. She is on every iPhone, iPad and Mac, and may be used there; Apple does not allow
-     her voice to be recorded into files for other phones. So:
-       1. A device that has Samantha speaks with Samantha, in every game.
-       2. A device without her speaks with another lady's voice of its own (known by name: a browser does not say
-          whether a voice is a woman's or a man's), or with its own English voice when the names tell nothing
-          (Android phones: "English United States").
-       3. A man's voice never speaks. A device that has only men's voices stays silent: the words are on the screen.
-     The voice speaks a little higher and a little slower than usual. */
-  var synth = window.speechSynthesis || null, voice = null, voiceKind = '', sayT = null, sayN = 0;
-  var LADY = /samantha|veena|isha|heera|neerja|swara|kajal|aditi|raveena|karen|moira|tessa|fiona|serena|kate\b|susan|allison|\bava\b|victoria|zoe|nicky|zira|\baria\b|jenny|sonia|libby|hazel|catherine|michelle|natasha|female|woman|google us english/i;
-  var MAN = /rishi|\bravi\b|prabhat|daniel|\balex\b|\bfred\b|\btom\b|oliver|aaron|arthur|gordon|martin|ralph|eddy|\breed\b|rocko|junior|david|\bmark\b|george|james|\bguy\b|ryan|\bmale\b|\bman\b/i;
-  var ODD = /bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|deranged|hysterical|grandma|grandpa|albert|kathy|\bflo\b|sandy|shelley|eloquence|espeak|compact/i;
-  var PLACE = [['en-us', 40], ['en-gb', 32], ['en-in', 30], ['en-au', 24], ['en-ie', 22], ['en-za', 22], ['en', 20]];   // nearest to Samantha first
-  function nameOf(v) { return String(v.name || '') + ' ' + String(v.voiceURI || ''); }
-  function kindOf(v) { var n = nameOf(v); return ODD.test(n) ? 'odd' : LADY.test(n) ? 'lady' : MAN.test(n) ? 'man' : 'unknown'; }
-  function marks(v) {
-    var lang = String(v.lang || '').toLowerCase().replace('_', '-'), name = nameOf(v), kind = kindOf(v), m = -1000;
-    for (var i = 0; i < PLACE.length; i++) { if (lang.indexOf(PLACE[i][0]) === 0) { m = PLACE[i][1]; break; } }
-    if (m < 0 || kind === 'man' || kind === 'odd') return -1000;      // not English, a man's voice or a funny voice: never
-    if (/samantha/i.test(name)) m += 300;
-    if (kind === 'lady') m += 100;
-    if (/natural|enhanced|premium|neural/i.test(name)) m += 6;
-    if (v.localService === false) m -= 5;
-    return m;
-  }
-  function choose(list) {
-    var best = -999, win = null, english = 0;
-    for (var j = 0; j < list.length; j++) {
-      if (/^en/i.test(String(list[j].lang || ''))) english++;
-      var m = marks(list[j]); if (m > best) { best = m; win = list[j]; }
-    }
-    // 'none' = the device named no English voice at all; 'men' = it has English voices, but only men's or funny ones
-    return { voice: win, kind: win ? kindOf(win) : english ? 'men' : 'none' };
-  }
-  var listed = false;                     // has the browser given its list of voices yet? (it comes a moment after the page)
-  function pickVoice() {
-    if (!synth) return;
-    var vs = [];
-    try { vs = synth.getVoices() || []; } catch (e) { vs = []; }
-    listed = vs.length > 0;
-    var c = choose(vs);
-    voice = c.voice; voiceKind = c.kind;
-    showVoice();
-  }
-  var PHONE = /iphone|ipad|ipod|android/i.test(navigator.userAgent || '');
-  function who() { return samantha() && !(OWN && ownVoice()) ? voice.name : (ownVoice() ? 'the game’s own lady’s voice' : voice && voiceKind === 'lady' ? voice.name : 'none'); }
-  function ownVoice() { for (var t in (G.voice || {})) { return location.protocol !== 'file:' && typeof Promise !== 'undefined' && !!(window.AudioContext || window.webkitAudioContext); } return false; }
-  /* The start screen says in small letters which voice this device uses. A phone that names its voices only by
-     language (Android) cannot tell the game whether the voice is a woman's: then the line says how to change it. */
-  function showVoice() {
-    var line = document.getElementById('voiceline');
-    if (!line) {                                   // a page made before this line existed: add it under the start screen
-      var panel = startEl && startEl.querySelector ? startEl.querySelector('.panel') : null;
-      if (!panel) return;
-      line = document.createElement('p'); line.className = 'credit'; line.id = 'voiceline';
-      panel.appendChild(line);
-    }
-    line.textContent = 'Voice on this device: ' + who() + '.';
-  }
-  /* The copy on the school's own Wi-Fi notes on the school computer which voice a device uses, so that a wrong
-     voice can be found (the page sets AV_DIAG; the copies on the internet do not have it and tell nothing). */
-  var told = false;
-  function tell() {
-    if (told || !window.AV_DIAG) return;
-    told = true;
-    try {
-      var vs = [], names = [];
-      try { vs = synth ? synth.getVoices() || [] : []; } catch (e) { vs = []; }
-      for (var i = 0; i < vs.length && names.length < 14; i++) { if (/^en/i.test(String(vs[i].lang || ''))) names.push(vs[i].name + '/' + vs[i].lang); }
-      new Image().src = window.AV_DIAG + '?g=' + G.no + '&v=' + encodeURIComponent(who()) + '&k=' + encodeURIComponent(voiceKind) + '&n=' + vs.length +
-        '&en=' + encodeURIComponent(names.join(', ').slice(0, 400)) + '&ua=' + encodeURIComponent(String(navigator.userAgent || '').slice(0, 180));
-    } catch (e) { /* only a note */ }
-  }
-  if (synth) { pickVoice(); try { synth.addEventListener('voiceschanged', pickVoice); } catch (e) { /* older browsers */ } } else { showVoice(); }
   /* Every sentence a game can say is made by L, so that lines() can list them all: each one has a recording. */
   var L = {
     yes: function (a, p) { return a.yes || 'Yes! ' + cap(p.w) + '.'; },
+    ok: function () { return 'Yes!'; },
     name: function (p) { return cap(p.w) + '.'; },
     bin: function (b) { return cap(b.w) + '!'; },
     sortAsk: function (q, sc) { return cap(q.w) + '. ' + sc.say; },
@@ -146,19 +106,24 @@
     if (G.mech === 'find') G.asks.forEach(function (a) { add(a.say); add(L.yes(a, { w: a.answer })); });
     else if (G.mech === 'match') { add(G.say); G.sets.forEach(function (set) { set.forEach(function (p) { add(L.name(p)); }); }); }
     else if (G.mech === 'pair') { add(G.say); G.pairs.forEach(function (x) { add(x.line); }); }
-    else if (G.mech === 'sort') G.screens.forEach(function (sc) { sc.bins.forEach(function (b) { add(L.bin(b)); }); sc.items.forEach(function (q) { add(L.name(q)); add(L.sortAsk(q, sc)); }); });
+    else if (G.mech === 'sort') G.screens.forEach(function (sc) {
+      if (sc.plain) { add(sc.say); add(L.ok()); return; }
+      sc.bins.forEach(function (b) { add(L.bin(b)); });
+      sc.items.forEach(function (q) { add(L.name(q)); add(L.sortAsk(q, sc)); });
+    });
     else if (G.mech === 'collect') { add(G.say); G.good.forEach(function (p, i) { add(G.count ? L.count(i + 1) : L.name(p)); }); G.bad.forEach(function (p) { add(L.miss(p)); }); }
+    else if (G.rounds) G.rounds.forEach(function (r) { add(r.say || G.say); add(r.yes || L.ok()); });
     add(L.done());
     return out;
   }
 
-  /* ── the game's own voice: recorded sentences that come with the game (voice/<key>.mp3) ──
-     A device that has Samantha speaks with her. Every other device plays these recordings: a lady's voice that is
-     the same on every phone and does not depend on the phone's own voices, which on an Android phone cannot be
-     chosen by a page and may be a man's. (The recordings are made on the school's Mac with the open voice
-     "Kokoro", which may be shared freely; Apple does not allow Samantha to be recorded into files.) */
-  var CLIPS = G.voice || {}, bytes = {}, sounds = {}, playing = null, HAS_P = typeof Promise !== 'undefined', mode = '';
-  var OWN = /[?&]voice=own\b/.test(String(location.search || ''));     // …?voice=own: the recorded voice also on a device that has Samantha
+  /* ── the voice: the game's own recorded lady's voice ──
+     Every sentence a game can say has a recording that comes with the game: voice/<key>.mp3. The game never uses
+     the voices of the phone or the computer. A page cannot be sure of them: on 15 Nov 2026 the school's own Mac
+     went on speaking in a man's voice although the page had chosen a lady's voice, and an Android phone does not
+     even let a page choose. (The recordings are made on the school's Mac with the open voice "Kokoro".) */
+  var CLIPS = G.voice || {}, bytes = {}, sounds = {}, playing = null, tag = null, sayT = null, sayN = 0;
+  var HAS_P = typeof Promise !== 'undefined', FILE = location.protocol === 'file:';
   function getBytes(key) {                // the file of one sentence, fetched once
     if (!bytes[key]) {
       bytes[key] = new Promise(function (ok, no) {
@@ -182,54 +147,56 @@
     }
     return sounds[key];
   }
-  function samantha() { return !!(voice && /samantha/i.test(voice.name)); }
-  function stopClip() { if (playing) { try { playing.stop(); } catch (e) { /* it had ended */ } playing = null; } }
+  function stopClip() {
+    if (playing) { try { playing.stop(); } catch (e) { /* it had ended */ } playing = null; }
+    if (tag) { try { tag.pause(); } catch (e) { /* nothing was playing */ } }
+  }
   function fetchClips() {                 // quietly, while the start screen is shown
-    if (!HAS_P || location.protocol === 'file:' || (samantha() && !OWN)) return;
+    if (!HAS_P || FILE) return;
     for (var t in CLIPS) { if (Object.prototype.hasOwnProperty.call(CLIPS, t)) getBytes(CLIPS[t]); }
   }
-  var said = [];                          // for the tests: what was said, and by whom
-  function speak(text) {
-    var how;
-    if (!synth) { said.push({ text: text, by: 'nobody (no voice here)' }); return; }
+  var said = [];                          // for the tests: what was said, and how
+  function playTag(key, text) {           // the simple player: for a page opened as a file, or when the other way fails
     try {
-      var u = new SpeechSynthesisUtterance(text);
-      if (voice && voiceKind === 'lady') { u.voice = voice; u.lang = voice.lang; how = voice.name; }
-      else { said.push({ text: text, by: 'nobody (' + (voiceKind === 'men' ? 'only men\'s voices here' : voice ? 'a voice that may be a man\'s' : 'no voice here') + ')' }); return; }
-      u.rate = 0.88; u.pitch = 1.25;      // gentle and a little bright
-      synth.speak(u);
-      said.push({ text: text, by: how });
-    } catch (e) { /* speech is a bonus */ }
+      if (!tag) tag = new Audio();
+      tag.muted = false;
+      tag.src = 'voice/' + key + '.mp3';
+      var pr = tag.play();
+      if (pr && pr.then) pr.then(null, function () { /* the device did not allow it: the words are on the screen */ });
+      said.push({ text: text, by: 'the game\'s own voice' });
+    } catch (e) { said.push({ text: text, by: 'nobody (the recording could not be played)' }); }
   }
   function say(text) {
     if (!text || document.hidden) return;
-    var n = ++sayN, tries = synth ? 0 : 99;
+    var n = ++sayN;
     clearTimeout(sayT);
     stopClip();
-    try { if (synth) synth.cancel(); } catch (e) { /* go on without it */ }
-    // The list of voices can come a moment after the page. Wait for it (up to about a second) rather than
-    // let the device's first voice speak, which is a man's on an iPhone or a Mac.
-    (function go() {
-      sayT = setTimeout(function () {
-        if (n !== sayN) return;
-        if (!listed) pickVoice();
-        if (!listed && ++tries < 12) { go(); return; }
-        if (!mode) mode = samantha() && !OWN ? 'samantha' : 'own';    // one voice for the whole visit
-        var key = CLIPS[text];
-        if (mode === 'own' && key && ac && HAS_P) {            // not an Apple device: the game's own recorded voice
-          getSound(key).then(function (buf) {
-            if (n !== sayN || document.hidden) return;
-            stopClip();
-            var src = ac.createBufferSource();
-            src.buffer = buf; src.connect(ac.destination); src.start(0);
-            playing = src;
-            said.push({ text: text, by: 'the game\'s own voice' });
-          }, function () { if (n === sayN) speak(text); });
-          return;
-        }
-        speak(text);
-      }, tries ? 100 : 70);
-    })();
+    sayT = setTimeout(function () {
+      if (n !== sayN) return;
+      var key = CLIPS[text];
+      if (!key) { said.push({ text: text, by: 'nobody (no recording)' }); return; }
+      if (ac && HAS_P && !FILE) {
+        getSound(key).then(function (buf) {
+          if (n !== sayN || document.hidden) return;
+          stopClip();
+          var src = ac.createBufferSource();
+          src.buffer = buf; src.connect(ac.destination); src.start(0);
+          playing = src;
+          said.push({ text: text, by: 'the game\'s own voice' });
+        }, function () { if (n === sayN) playTag(key, text); });
+      } else playTag(key, text);
+    }, 70);
+  }
+  /* The copy on the school's own Wi-Fi notes on the school computer which device played (the page sets AV_DIAG;
+     the copies on the internet do not have it and tell nothing). It helped to find the man's voice. */
+  var told = false;
+  function tell() {
+    if (told || !window.AV_DIAG) return;
+    told = true;
+    try {
+      new Image().src = window.AV_DIAG + '?g=' + encodeURIComponent(String(G.no)) + '&v=' + encodeURIComponent('the game’s own recorded voice') +
+        '&k=' + (ac && HAS_P && !FILE ? 'webaudio' : 'tag') + '&n=0&en=&ua=' + encodeURIComponent(String(navigator.userAgent || '').slice(0, 180));
+    } catch (e) { /* only a note */ }
   }
   var lastSay = '';
   function ask(text, spoken) { promptEl.textContent = text; lastSay = spoken || text; say(lastSay); }
@@ -449,7 +416,7 @@
         var t = {
           node: n,
           accepts: function (it) { return it.bin === i; },
-          fill: function (it) { el('span', 'mini', tray).appendChild(pic(it.p)); say(L.bin(b)); }
+          fill: function (it) { el('span', 'mini', tray).appendChild(pic(it.p)); say(sc.plain ? L.ok() : L.bin(b)); }
         };
         targets.push(t);
         n.addEventListener('pointerdown', function () { if (cur && !cur.done) attempt(cur, t); });
@@ -460,10 +427,11 @@
         if (!q) { stopIdle(); setTimeout(done, 500); return; }
         stage.innerHTML = '';
         var n = el('div', 'drag solo', stage);
+        n.setAttribute('data-bin', q.bin);
         n.appendChild(pic(q));
         cur = { node: n, bin: q.bin, p: q };
-        draggable(cur, function () { say(L.name(q)); });
-        ask(sc.say, L.sortAsk(q, sc));
+        draggable(cur, function () { if (!sc.plain) say(L.name(q)); });
+        ask(sc.say, sc.plain ? sc.say : L.sortAsk(q, sc));
         firstHint(hint);
         armIdle(function () { say(lastSay); hint(); });
       }
@@ -504,6 +472,76 @@
     };
   }
 
+  /* ── same, odd one out, what comes next: tap one of the pictures ──
+     A round can have a board on top: the picture to find again, or a row or grid with one place left open. */
+  function chooseRound(r) {
+    return function (done) {
+      clearPlay('pick' + (r.top ? ' withtop' : ''));
+      if (r.top) {
+        var board = el('div', 'board', play);
+        board.style.setProperty('--cols', r.cols || r.top.length);
+        r.top.forEach(function (p) { var c = el('div', 'cell' + (p ? '' : ' q'), board); if (p) c.appendChild(pic(p)); else c.textContent = '?'; });
+      }
+      var row = el('div', 'row', play), locked = false, right = null;
+      shuffle(r.choices.map(function (p, i) { return { p: p, i: i }; })).forEach(function (ch) {
+        var b = el('button', 'tile', row), last = 0;
+        b.type = 'button'; b.setAttribute('data-i', ch.i); b.appendChild(pic(ch.p));
+        if (ch.i === r.answer) right = b;
+        function choose() {
+          var now = Date.now();
+          if (now - last < 450) return;
+          last = now;
+          if (locked || b.classList.contains('off')) return;
+          if (ch.i === r.answer) {
+            locked = true; stopIdle();
+            b.classList.add('yes'); sfx('good'); sparks(b); step(); say(r.yes || L.ok());
+            var q = play.querySelector('.cell.q');
+            if (q) { q.textContent = ''; q.className = 'cell filled'; q.appendChild(pic(ch.p)); }
+            setTimeout(done, 1600);
+          } else {
+            sfx('bad'); b.classList.add('no');
+            setTimeout(function () { b.classList.remove('no'); b.classList.add('off'); }, 430);
+          }
+        }
+        b.addEventListener('pointerdown', choose);
+        b.addEventListener('click', choose);
+      });
+      ask(r.say || G.say);
+      armIdle(function () { say(lastSay); right.classList.add('hint'); setTimeout(function () { right.classList.remove('hint'); }, 1350); });
+    };
+  }
+
+  /* ── order: tap the pictures one after the other, as the game says (the smallest first …) ── */
+  function orderRound(r) {
+    return function (done) {
+      clearPlay('order');
+      var top = el('div', 'row slots', play), row = el('div', 'row', play), nextI = 0, tiles = [];
+      r.items.forEach(function () { el('div', 'slot', top); });
+      shuffle(r.items.map(function (p, i) { return { p: p, i: i }; })).forEach(function (it) {
+        var b = el('button', 'tile', row), last = 0;
+        b.type = 'button'; b.setAttribute('data-i', it.i); b.appendChild(pic(it.p));
+        tiles[it.i] = b;
+        function choose() {
+          var now = Date.now();
+          if (now - last < 450) return;
+          last = now;
+          if (b.classList.contains('gone')) return;
+          if (it.i === nextI) {
+            var slot = top.children[nextI];
+            slot.classList.add('full'); slot.appendChild(pic(it.p));
+            b.classList.add('gone'); sfx('tap'); nextI++;
+            resetIdle();
+            if (nextI === r.items.length) { stopIdle(); sfx('good'); sparks(top); step(); say(r.yes || L.ok()); setTimeout(done, 1700); }
+          } else { sfx('bad'); b.classList.add('no'); setTimeout(function () { b.classList.remove('no'); }, 430); }
+        }
+        b.addEventListener('pointerdown', choose);
+        b.addEventListener('click', choose);
+      });
+      ask(r.say || G.say);
+      armIdle(function () { say(lastSay); var t = tiles[nextI]; if (t) { t.classList.add('hint'); setTimeout(function () { t.classList.remove('hint'); }, 1350); } });
+    };
+  }
+
   /* ── the flow: start → rounds → well done ── */
   var rounds = [], ri = 0;
   function show(s) { [startEl, gameEl, endEl].forEach(function (x) { x.classList.toggle('on', x === s); }); }
@@ -528,6 +566,12 @@
     } else if (G.mech === 'collect') {
       total = G.good.length;
       rounds.push(collectRound());
+    } else if (G.mech === 'order') {
+      total = G.rounds.length;
+      G.rounds.forEach(function (r) { rounds.push(orderRound(r)); });
+    } else if (G.rounds) {                  // same, odd, next
+      total = G.rounds.length;
+      G.rounds.forEach(function (r) { rounds.push(chooseRound(r)); });
     }
   }
   function next() {
@@ -539,15 +583,13 @@
   $('go').addEventListener('click', begin);
   $('replay').addEventListener('click', begin);
   document.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
-  function hush() { sayN++; clearTimeout(sayT); stopClip(); try { if (synth) synth.cancel(); } catch (e) { /* nothing to stop */ } }
+  function hush() { sayN++; clearTimeout(sayT); stopClip(); }
   window.addEventListener('pagehide', hush);
   document.addEventListener('visibilitychange', function () {      // the game is silent when its page is not in front
     if (document.hidden) { hush(); clearTimeout(idleT); stopHand(); } else { resetIdle(); }
   });
   window.AVGAME = { begin: begin, state: function () { return { got: got, total: total, round: ri, rounds: rounds.length, ended: endEl.classList.contains('on') }; },
-    // for the tests: which voice speaks here, and which one would be chosen from a given list of voices
-    voice: function () { return { name: voice ? voice.name : '', lang: voice ? voice.lang : '', kind: voiceKind }; },
-    bestOf: function (list) { var c = choose(list); return c.voice ? c.voice.name : c.kind === 'men' ? '(silent: only men\'s voices)' : '(none named)'; },
-    said: function () { return said.slice(); }, lines: lines, clips: function () { return CLIPS; }, mode: function () { return mode; } };
-  setTimeout(fetchClips, 1300);          // after the list of voices has come: a device with Samantha needs no recordings
+    // for the tests: what was said and how, every sentence the game can say, and the recordings it has
+    said: function () { return said.slice(); }, lines: lines, clips: function () { return CLIPS; } };
+  setTimeout(fetchClips, 600);
 })();
