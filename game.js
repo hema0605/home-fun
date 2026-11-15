@@ -102,7 +102,7 @@
     showVoice();
   }
   var PHONE = /iphone|ipad|ipod|android/i.test(navigator.userAgent || '');
-  function who() { return samantha() ? voice.name : (ownVoice() ? 'the game’s own lady’s voice' : voice && voiceKind === 'lady' ? voice.name : 'none'); }
+  function who() { return samantha() && !(OWN && ownVoice()) ? voice.name : (ownVoice() ? 'the game’s own lady’s voice' : voice && voiceKind === 'lady' ? voice.name : 'none'); }
   function ownVoice() { for (var t in (G.voice || {})) { return location.protocol !== 'file:' && typeof Promise !== 'undefined' && !!(window.AudioContext || window.webkitAudioContext); } return false; }
   /* The start screen says in small letters which voice this device uses. A phone that names its voices only by
      language (Android) cannot tell the game whether the voice is a woman's: then the line says how to change it. */
@@ -158,6 +158,7 @@
      chosen by a page and may be a man's. (The recordings are made on the school's Mac with the open voice
      "Kokoro", which may be shared freely; Apple does not allow Samantha to be recorded into files.) */
   var CLIPS = G.voice || {}, bytes = {}, sounds = {}, playing = null, HAS_P = typeof Promise !== 'undefined', mode = '';
+  var OWN = /[?&]voice=own\b/.test(String(location.search || ''));     // …?voice=own: the recorded voice also on a device that has Samantha
   function getBytes(key) {                // the file of one sentence, fetched once
     if (!bytes[key]) {
       bytes[key] = new Promise(function (ok, no) {
@@ -184,7 +185,7 @@
   function samantha() { return !!(voice && /samantha/i.test(voice.name)); }
   function stopClip() { if (playing) { try { playing.stop(); } catch (e) { /* it had ended */ } playing = null; } }
   function fetchClips() {                 // quietly, while the start screen is shown
-    if (!HAS_P || location.protocol === 'file:' || samantha()) return;
+    if (!HAS_P || location.protocol === 'file:' || (samantha() && !OWN)) return;
     for (var t in CLIPS) { if (Object.prototype.hasOwnProperty.call(CLIPS, t)) getBytes(CLIPS[t]); }
   }
   var said = [];                          // for the tests: what was said, and by whom
@@ -213,7 +214,7 @@
         if (n !== sayN) return;
         if (!listed) pickVoice();
         if (!listed && ++tries < 12) { go(); return; }
-        if (!mode) mode = samantha() ? 'samantha' : 'own';    // one voice for the whole visit
+        if (!mode) mode = samantha() && !OWN ? 'samantha' : 'own';    // one voice for the whole visit
         var key = CLIPS[text];
         if (mode === 'own' && key && ac && HAS_P) {            // not an Apple device: the game's own recorded voice
           getSound(key).then(function (buf) {
